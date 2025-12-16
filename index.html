@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chess Game - Player vs Computer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 1100px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        .login-screen, .game-screen {
+            display: none;
+        }
+
+        .login-screen.active, .game-screen.active {
+            display: block;
+        }
+
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .login-form {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .game-container {
+            display: flex;
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        .board-section {
+            flex: 1;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(8, 70px);
+            grid-template-rows: repeat(8, 70px);
+            border: 4px solid #333;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            margin: 0 auto;
+            width: fit-content;
+        }
+
+        .cell {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 45px;
+            position: relative;
+            transition: background-color 0.2s;
+        }
+
+        .cell.white {
+            background: #f0d9b5;
+        }
+
+        .cell.black {
+            background: #b58863;
+        }
+
+        .cell.cursor {
+            box-shadow: inset 0 0 0 4px #4CAF50;
+            animation: pulse 1s infinite;
+        }
+
+        .cell.selected {
+            background: #7fa650 !important;
+            box-shadow: inset 0 0 0 4px #fff;
+        }
+
+        .cell.valid-move {
+            background: #c8e6c9 !important;
+        }
+
+        .cell.valid-move::after {
+            content: '●';
+            position: absolute;
+            font-size: 20px;
+            color: rgba(76, 175, 80, 0.6);
+        }
+
+        .cell.computer-piece {
+            box-shadow: inset 0 0 0 3px #ff5722;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: inset 0 0 0 4px #4CAF50; }
+            50% { box-shadow: inset 0 0 0 6px #4CAF50; }
+        }
+
+        .info-section {
+            flex: 1;
+            min-width: 320px;
+        }
+
+        .info-box {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .info-box h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .player-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .player-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 1.1em;
+        }
+
+        .score {
+            font-size: 1.5em;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .game-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .stat-item {
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .turn-indicator {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            margin-top: 10px;
+            font-weight: 600;
+        }
+
+        .turn-indicator.player-turn {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .turn-indicator.computer-turn {
+            background: #ff5722;
+            color: white;
+        }
+
+        .leaderboard {
+            max-height: 450px;
+            overflow-y: auto;
+        }
+
+        .leaderboard::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .leaderboard::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .leaderboard::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 4px;
+        }
+
+        .leaderboard-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            margin-bottom: 8px;
+            background: white;
+            border-radius: 8px;
+            transition: transform 0.2s;
+        }
+
+        .leaderboard-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .rank {
+            font-weight: 700;
+            color: #667eea;
+            font-size: 1.1em;
+            min-width: 35px;
+        }
+
+        .rank.gold { color: #ffd700; }
+        .rank.silver { color: #c0c0c0; }
+        .rank.bronze { color: #cd7f32; }
+
+        .controls {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .controls h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .control-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .control-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background: white;
+            border-radius: 6px;
+        }
+
+        .key-icon {
+            background: #667eea;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+
+        .status {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #333;
+            text-align: center;
+            padding: 15px;
+            background: #fff3cd;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            animation: fadeIn 0.5s;
+        }
+
+        .status.win {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.lose {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status.move {
+            background: #cfe2ff;
+            color: #084298;
+        }
+
+        .status.check {
+            background: #fff3cd;
+            color: #856404;
+            animation: shake 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .button-secondary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            margin-top: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            .game-container {
+                flex-direction: column;
+            }
+
+            .board {
+                grid-template-columns: repeat(8, 45px);
+                grid-template-rows: repeat(8, 45px);
+            }
+
+            .cell {
+                font-size: 30px;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="login-screen active">
+            <h1>♟️ Chess Game</h1>
+            <div class="login-form">
+                <div class="input-group">
+                    <label for="username">Enter Your Name</label>
+                    <input type="text" id="username" placeholder="Enter your name" maxlength="20">
+                </div>
+                <button onclick="login()">Start Game</button>
+            </div>
+        </div>
+
+        <div class="game-screen">
+            <h1>♟️ Chess Game - Player vs Computer</h1>
+            <div class="status" id="status">Select your white piece with arrow keys and Enter!</div>
+            
+            <div class="game-container">
+                <div class="board-section">
+                    <div class="board" id="board"></div>
+                    <div class="controls">
+                        <h3>🎮 Controls</h3>
+                        <div class="control-grid">
+                            <div class="control-item">
+                                <span class="key-icon">↑↓←→</span>
+                                <span>Move cursor</span>
+                            </div>
+                            <div class="control-item">
+                                <span class="key-icon">Enter</span>
+                                <span>Select/Move</span>
+                            </div>
+                        </div>
+                        <button onclick="resetGame()">New Game</button>
+                        <button class="button-secondary" onclick="logout()">Logout</button>
+                    </div>
+                </div>
+
+                <div class="info-section">
+                    <div class="info-box">
+                        <h2>👤 Current Player</h2>
+                        <div class="player-info">
+                            <span class="player-name" id="currentPlayer"></span>
+                            <span class="score" id="currentScore">0 pts</span>
+                        </div>
+                        <div class="turn-indicator" id="turnIndicator">Your Turn</div>
+                        <div class="game-stats">
+                            <div class="stat-item">
+                                <div class="stat-label">Moves</div>
+                                <div class="stat-value" id="moveCount">0</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Captured</div>
+                                <div class="stat-value" id="capturedCount">0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="info-box">
+                        <h2>🏆 Top 10 Rankings</h2>
+                        <div class="leaderboard" id="leaderboard">
+                            <p style="text-align: center; color: #999;">Loading rankings...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getDatabase, ref, set, onValue, query, orderByChild, limitToLast } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+        // Firebase Configuration
+        const firebaseConfig = {
+  apiKey: "AIzaSyBuBJHMB1R37xJTgwjhsvRTPsTdHDuhvsM",
+  authDomain: "my-chess-master.firebaseapp.com",
+  databaseURL: "https://my-chess-master-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "my-chess-master",
+  storageBucket: "my-chess-master.firebasestorage.app",
+  messagingSenderId: "948714153238",
+  appId: "1:948714153238:web:d617a25e103178a2079c37"
+};
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        let currentUser = '';
+        let score = 0;
+        let moveCount = 0;
+        let capturedCount = 0;
+        let cursorX = 4;
+        let cursorY = 7;
+        let selectedPiece = null;
+        let validMoves = [];
+        let isPlayerTurn = true;
+        let gameActive = true;
+        let board = [];
+        let whiteKingPos = { x: 4, y: 7 };
+        let blackKingPos = { x: 4, y: 0 };
+
+        function initBoard() {
+            board = [
+                ['♜', '♞', '♝', '♛', '♚', '♝', '♞', '♜'],
+                ['♟', '♟', '♟', '♟', '♟', '♟', '♟', '♟'],
+                ['', '', '', '', '', '', '', ''],
+                ['', '', '', '', '', '', '', ''],
+                ['', '', '', '', '', '', '', ''],
+                ['', '', '', '', '', '', '', ''],
+                ['♙', '♙', '♙', '♙', '♙', '♙', '♙', '♙'],
+                ['♖', '♘', '♗', '♕', '♔', '♗', '♘', '♖']
+            ];
+            cursorX = 4;
+            cursorY = 7;
+            selectedPiece = null;
+            validMoves = [];
+            isPlayerTurn = true;
+            gameActive = true;
+            score = 0;
+            moveCount = 0;
+            capturedCount = 0;
+            whiteKingPos = { x: 4, y: 7 };
+            blackKingPos = { x: 4, y: 0 };
+            updateStats();
+            updateTurnIndicator();
+        }
+
+        function renderBoard() {
+            const boardEl = document.getElementById('board');
+            boardEl.innerHTML = '';
+
+            for (let y = 0; y < 8; y++) {
+                for (let x = 0; x < 8; x++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell ' + ((x + y) % 2 === 0 ? 'white' : 'black');
+                    
+                    if (x === cursorX && y === cursorY && isPlayerTurn) {
+                        cell.classList.add('cursor');
+                    }
+                    
+                    if (selectedPiece && selectedPiece.x === x && selectedPiece.y === y) {
+                        cell.classList.add('selected');
+                    }
+
+                    if (validMoves.some(m => m.x === x && m.y === y)) {
+                        cell.classList.add('valid-move');
+                    }
+
+                    const piece = board[y][x];
+                    if (piece && isBlackPiece(piece)) {
+                        cell.classList.add('computer-piece');
+                    }
+                    
+                    cell.textContent = board[y][x];
+                    boardEl.appendChild(cell);
+                }
+            }
+        }
+
+        function isWhitePiece(piece) {
+            return ['♔', '♕', '♖', '♗', '♘', '♙'].includes(piece);
+        }
+
+        function isBlackPiece(piece) {
+            return ['♚', '♛', '♜', '♝', '♞', '♟'].includes(piece);
+        }
+
+        function getPieceType(piece) {
+            const types = {
+                '♔': 'king', '♚': 'king',
+                '♕': 'queen', '♛': 'queen',
+                '♖': 'rook', '♜': 'rook',
+                '♗': 'bishop', '♝': 'bishop',
+                '♘': 'knight', '♞': 'knight',
+                '♙': 'pawn', '♟': 'pawn'
+            };
+            return types[piece] || '';
+        }
+
+        function getValidMoves(x, y, piece) {
+            const moves = [];
+            const type = getPieceType(piece);
+            const isWhite = isWhitePiece(piece);
+
+            if (type === 'pawn') {
+                const dir = isWhite ? -1 : 1;
+                const startRow = isWhite ? 6 : 1;
+                
+                if (board[y + dir] && board[y + dir][x] === '') {
+                    moves.push({ x, y: y + dir });
+                    if (y === startRow && board[y + dir * 2][x] === '') {
+                        moves.push({ x, y: y + dir * 2 });
+                    }
+                }
+                
+                if (x > 0 && board[y + dir] && board[y + dir][x - 1]) {
+                    const target = board[y + dir][x - 1];
+                    if ((isWhite && isBlackPiece(target)) || (!isWhite && isWhitePiece(target))) {
+                        moves.push({ x: x - 1, y: y + dir });
+                    }
+                }
+                if (x < 7 && board[y + dir] && board[y + dir][x + 1]) {
+                    const target = board[y + dir][x + 1];
+                    if ((isWhite && isBlackPiece(target)) || (!isWhite && isWhitePiece(target))) {
+                        moves.push({ x: x + 1, y: y + dir });
+                    }
+                }
+            }
+            else if (type === 'knight') {
+                const knightMoves = [
+                    [2, 1], [2, -1], [-2, 1], [-2, -1],
+                    [1, 2], [1, -2], [-1, 2], [-1, -2]
+                ];
+                for (const [dx, dy] of knightMoves) {
+                    const newX = x + dx, newY = y + dy;
+                    if (newX >= 0 && newX < 8 && newY >= 0 && newY < 8) {
+                        const target = board[newY][newX];
+                        if (!target || (isWhite ? isBlackPiece(target) : isWhitePiece(target))) {
+                            moves.push({ x: newX, y: newY });
+                        }
+                    }
+                }
+            }
+            else if (type === 'bishop') {
+                const dirs = [[1, 1], [1, -1], [-1, 1], [-1, -1]];
+                for (const [dx, dy] of dirs) {
+                    for (let i = 1; i < 8; i++) {
+                        const newX = x + dx * i, newY = y + dy * i;
+                        if (newX < 0 || newX >= 8 || newY < 0 || newY >= 8) break;
+                        const target = board[newY][newX];
+                        if (!target) {
+                            moves.push({ x: newX, y: newY });
+                        } else {
+                            if (isWhite ? isBlackPiece(target) : isWhitePiece(target)) {
+                                moves.push({ x: newX, y: newY });
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+            else if (type === 'rook') {
+                const dirs = [[0, 1], [0, -1], [1, 0], [-1, 0]];
+                for (const [dx, dy] of dirs) {
+                    for (let i = 1; i < 8; i++) {
+                        const newX = x + dx * i, newY = y + dy * i;
+                        if (newX < 0 || newX >= 8 || newY < 0 || newY >= 8) break;
+                        const target = board[newY][newX];
+                        if (!target) {
+                            moves.push({ x: newX, y: newY });
+                        } else {
+                            if (isWhite ? isBlackPiece(target) : isWhitePiece(target)) {
+                                moves.push({ x: newX, y: newY });
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+            else if (type === 'queen') {
+                const dirs = [[0, 1], [0, -1], [1, 0], [-1, 0], [1, 1], [1, -1], [-1, 1], [-1, -1]];
+                for (const [dx, dy] of dirs) {
+                    for (let i = 1; i < 8; i++) {
+                        const newX = x + dx * i, newY = y + dy * i;
+                        if (newX < 0 || newX >= 8 || newY < 0 || newY >= 8) break;
+                        const target = board[newY][newX];
+                        if (!target) {
+                            moves.push({ x: newX, y: newY });
+                        } else {
+                            if (isWhite ? isBlackPiece(target) : isWhitePiece(target)) {
+                                moves.push({ x: newX, y: newY });
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+            else if (type === 'king') {
+                const dirs = [[0, 1], [0, -1], [1, 0], [-1, 0], [1, 1], [1, -1], [-1, 1], [-1, -1]];
+                for (const [dx, dy] of dirs) {
+                    const newX = x + dx, newY = y + dy;
+                    if (newX >= 0 && newX < 8 && newY >= 0 && newY < 8) {
+                        const target = board[newY][newX];
+                        if (!target || (isWhite ? isBlackPiece(target) : isWhitePiece(target))) {
+                            moves.push({ x: newX, y: newY });
+                        }
+                    }
+                }
+            }
+
+            return moves;
+        }
+
+        function updateStats() {
+            document.getElementById('currentScore').textContent = score + ' pts';
+            document.getElementById('moveCount').textContent = moveCount;
+            document.getElementById('capturedCount').textContent = capturedCount;
+        }
+
+        function updateTurnIndicator() {
+            const indicator = document.getElementById('turnIndicator');
+            if (isPlayerTurn) {
+                indicator.textContent = '🟢 Your Turn';
+                indicator.className = 'turn-indicator player-turn';
+            } else {
+                indicator.textContent = '🔴 Computer Turn';
+                indicator.className = 'turn-indicator computer-turn';
+            }
+        }
+
+        function showStatus(message, type = '') {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = 'status ' + type;
+        }
+
+        function movePiece() {
+            if (!gameActive || !isPlayerTurn) return;
+
+            if (!selectedPiece) {
+                const piece = board[cursorY][cursorX];
+                if (piece && isWhitePiece(piece)) {
+                    selectedPiece = { x: cursorX, y: cursorY, piece };
+                    validMoves = getValidMoves(cursorX, cursorY, piece);
+                    showStatus(`Selected ${getPieceType(piece)}. Choose where to move!`, 'move');
+                } else if (piece && isBlackPiece(piece)) {
+                    showStatus('You can only move white pieces!', '');
+                } else {
+                    showStatus('Select a white piece to move!', '');
+                }
+            } else {
+                if (selectedPiece.x === cursorX && selectedPiece.y === cursorY) {
+                    selectedPiece = null;
+                    validMoves = [];
+                    showStatus('Selection cancelled. Choose another piece!', '');
+                    renderBoard();
+                    return;
+                }
+
+                const isValid = validMoves.some(m => m.x === cursorX && m.y === cursorY);
+                if (!isValid) {
+                    showStatus('Invalid move! Select a highlighted square.', '');
+                    renderBoard();
+                    return;
+                }
+
+                const targetPiece = board[cursorY][cursorX];
+                
+                board[cursorY][cursorX] = selectedPiece.piece;
+                board[selectedPiece.y][selectedPiece.x] = '';
+
+                if (selectedPiece.piece === '♔') {
+                    whiteKingPos = { x: cursorX, y: cursorY };
+                }
+
+                if (targetPiece === '♚') {
+                    score += 100;
+                    moveCount++;
+                    capturedCount++;
+                    gameActive = false;
+                    updateStats();
+                    saveScore();
+                    showStatus('🎉 CHECKMATE! You captured the Black King! +100 pts', 'win');
+                    setTimeout(() => {
+                        if (confirm('Congratulations! Play again?')) {
+                            resetGame();
+                        }
+                    }, 2000);
+                    renderBoard();
+                    return;
+                }
+
+                if (isBlackPiece(targetPiece)) {
+                    score += 10;
+                    capturedCount++;
+                    showStatus(`Captured ${getPieceType(targetPiece)}! +10 pts`, 'move');
+                } else {
+                    showStatus('Piece moved! Computer\'s turn...', 'move');
+                }
+
+                moveCount++;
+                selectedPiece = null;
+                validMoves = [];
+                isPlayerTurn = false;
+                updateStats();
+                updateTurnIndicator();
+                renderBoard();
+                
+                setTimeout(() => {
+                    computerMove();
+                }, 1500);
+            }
+            renderBoard();
+        }
+
+        function computerMove() {
+            if (!gameActive) return;
+
+            const blackPieces = [];
+            for (let y = 0; y < 8; y++) {
+                for (let x = 0; x < 8; x++) {
+                    if (isBlackPiece(board[y][x])) {
+                        const moves = getValidMoves(x, y, board[y][x]);
+                        if (moves.length > 0) {
+                            blackPieces.push({ x, y, piece: board[y][x], moves });
+                        }
+                    }
+                }
+            }
+
+            if (blackPieces.length === 0) {
+                gameActive = false;
+                showStatus('Stalemate! No valid moves for computer.', 'win');
+                return;
+            }
+
+            let selectedMove = null;
+            
+            for (const piece of blackPieces) {
+                for (const move of piece.moves) {
+                    if (board[move.y][move.x] === '♔') {
+                        selectedMove = { piece, move };
+                        break;
+                    }
+                }
+                if (selectedMove) break;
+            }
+
+            if (!selectedMove) {
+                for (const piece of blackPieces) {
+                    for (const move of piece.moves) {
+                        if (isWhitePiece(board[move.y][move.x])) {
+                            selectedMove = { piece, move };
+                            break;
+                        }
+                    }
+                    if (selectedMove) break;
+                }
+            }
+
+            if (!selectedMove) {
+                const randomPiece = blackPieces[Math.floor(Math.random() * blackPieces.length)];
+                const randomMove = randomPiece.moves[Math.floor(Math.random() * randomPiece.moves.length)];
+                selectedMove = { piece: randomPiece, move: randomMove };
+            }
+
+            const targetPiece = board[selectedMove.move.y][selectedMove.move.x];
+            
+            board[selectedMove.move.y][
